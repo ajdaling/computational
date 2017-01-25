@@ -28,6 +28,9 @@ main ()
   float x1 = cos(pi/4.)/sin(pi/4.);
   float x2 = 1.;
   
+  cout << "x1 is: " << setprecision(18) << x1 << endl;
+  cout << "x2 is: " << setprecision(18) << x2 << endl;
+
   if (x1 == x2)
   {
     cout << " x1 and x2 are equal " << endl;

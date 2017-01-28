@@ -18,6 +18,7 @@
 #include <iostream>		// basic input/output functions
 #include <iomanip>		// manipulators like setprecision
 #include <fstream>		// to read and write data as file streams 
+#include <cmath>
 using namespace std;	// so that std::cout --> cout, etc.
 
 // function prototypes 
@@ -40,6 +41,10 @@ main ()
   double exact = test_function_derivative(x);	// exact answer for test 
 
   double h = 0.1;		// initialize mesh spacing 
+  
+  //print header line
+  //fprintf(fout, "%18s%18s%18s\n","h","fd_rel_error","cd_rel_error");
+  deriv_out << left << setw(18) << "#h" << setw(18) << "fd_rel_err" << setw(18) << "cd_rel_err" << endl;
   while (h >= h_min)
   {
     diff_fd = forward_diff (x, h, &test_function);

@@ -62,104 +62,118 @@ int
 main ()
 {
   // Choose Rmax (maximum radius)
-  double Rmax = 5.;
-  cout << "Enter maximum radius (Rmax): ";
-  cin >> Rmax;
+  double Rmax = 4.;
+  //cout << "Enter maximum radius (Rmax): ";
+  //cin >> Rmax;
 
   // Pick the value of the number of steps N 
-  int N = 0;		
-  cout << "Enter the number of steps (N): ";
-  cin >> N;
+  //int N = 0;		
+  //cout << "Enter the number of steps (N): ";
+  //cin >> N;
   // The matrix dimension is N-1 (see the notes).
-  int dimension = N-1;
   
-  // Calculate h = Delta x
-  double h = Rmax/double(N);
-  double hsq = sqr(h);
-
-  // See the GSL documentation for matrix, vector structures 
-  //  Define and allocate space for the vectors, matrices, and workspace 
-                               // original gsl matrix with Hamiltonian 
-  gsl_matrix *Hmat_ptr = gsl_matrix_alloc (dimension, dimension); 
-                               // gsl vector with eigenvalues 
-  gsl_vector *Eigval_ptr = gsl_vector_alloc (dimension);	
-                               // gsl matrix with eigenvectors 
-  gsl_matrix *Eigvec_ptr = gsl_matrix_alloc (dimension, dimension);	
-                               // the workspace for gsl 
-  gsl_eigen_symmv_workspace *worksp= gsl_eigen_symmv_alloc (dimension);	
-
-  // Load the Hamiltonian matrix pointed to by Hmat_ptr
-  //  The elements are labeled from 1 to N-1, but stored from 0 to N-2  
-  for (int i = 1; i <= dimension; i++)
+  ofstream out ("eigen_tridiagonal_error.dat");
+	out << "# N			Rel_Err" << endl;
+  
+  for(int N = 4; N <= 1024; N = N*2)
   {
-    for (int j = 1; j <= dimension; j++)
-    {
-      double Hij;
-      if (i == j)                  // diagonal matrix element
-      {
-        double r = double(i)*h;
-        Hij = 2./hsq + V_ho(r); 
-      }
-      else if (i == j+1)          // just above the diagonal
-      {
-        Hij = -1./hsq;
-      }
-      else if (i == j-1)          // just below the diagonal
-      {
-        Hij = -1./hsq;
-      }
-      else                        // all the other elements
-      {
-        Hij = 0.;                 
-      }
- 
-      gsl_matrix_set (Hmat_ptr, i-1, j-1, Hij);  // set the i-1,j-1 element
-    }
-  }
+		int dimension = N-1;
+		
+		// Calculate h = Delta x
+		double h = Rmax/double(N);
+		double hsq = sqr(h);
 
-  // Find the eigenvalues and eigenvectors of the real, symmetric
-  //  matrix pointed to by Hmat_ptr.  It is partially destroyed
-  //  in the process. The eigenvectors are pointed to by 
-  //  Eigvec_ptr and the eigenvalues by Eigval_ptr.
-  gsl_eigen_symmv (Hmat_ptr, Eigval_ptr, Eigvec_ptr, worksp);
+		// See the GSL documentation for matrix, vector structures 
+		//  Define and allocate space for the vectors, matrices, and workspace 
+		                             // original gsl matrix with Hamiltonian 
+		gsl_matrix *Hmat_ptr = gsl_matrix_alloc (dimension, dimension); 
+		                             // gsl vector with eigenvalues 
+		gsl_vector *Eigval_ptr = gsl_vector_alloc (dimension);	
+		                             // gsl matrix with eigenvectors 
+		gsl_matrix *Eigvec_ptr = gsl_matrix_alloc (dimension, dimension);	
+		                             // the workspace for gsl 
+		gsl_eigen_symmv_workspace *worksp= gsl_eigen_symmv_alloc (dimension);	
 
-  // Sort the eigenvalues and eigenvectors in ascending order 
-  gsl_eigen_symmv_sort (Eigval_ptr, Eigvec_ptr, GSL_EIGEN_SORT_VAL_ASC);
+		// Load the Hamiltonian matrix pointed to by Hmat_ptr
+		//  The elements are labeled from 1 to N-1, but stored from 0 to N-2  
+		for (int i = 1; i <= dimension; i++)
+		{
+		  for (int j = 1; j <= dimension; j++)
+		  {
+		    double Hij;
+		    if (i == j)                  // diagonal matrix element
+		    {
+		      double r = double(i)*h;
+		      Hij = 2./hsq + V_ho(r); 
+		    }
+		    else if (i == j+1)          // just above the diagonal
+		    {
+		      Hij = -1./hsq;
+		    }
+		    else if (i == j-1)          // just below the diagonal
+		    {
+		      Hij = -1./hsq;
+		    }
+		    else                        // all the other elements
+		    {
+		      Hij = 0.;                 
+		    }
+	 
+		    gsl_matrix_set (Hmat_ptr, i-1, j-1, Hij);  // set the i-1,j-1 element
+		  }
+		}
 
-  // Print out the results   
-  // Allocate a pointer to one of the eigenvectors of the matrix 
-  gsl_vector *eigenvector_ptr = gsl_vector_alloc (dimension);	
-  for (int i = 1; i <= dimension; i++)
-  {
-    double eigenvalue = gsl_vector_get (Eigval_ptr, i-1);
-    gsl_matrix_get_col (eigenvector_ptr, Eigvec_ptr, i-1);
+		// Find the eigenvalues and eigenvectors of the real, symmetric
+		//  matrix pointed to by Hmat_ptr.  It is partially destroyed
+		//  in the process. The eigenvectors are pointed to by 
+		//  Eigvec_ptr and the eigenvalues by Eigval_ptr.
+		gsl_eigen_symmv (Hmat_ptr, Eigval_ptr, Eigvec_ptr, worksp);
 
-    cout << "eigenvalue " << i << " = " 
-         << scientific << eigenvalue << endl;
+		// Sort the eigenvalues and eigenvectors in ascending order 
+		gsl_eigen_symmv_sort (Eigval_ptr, Eigvec_ptr, GSL_EIGEN_SORT_VAL_ASC);
 
-    // Print out the eigenvector with the lowest eigenvalue to a file
-    if (i == 1)
-    {
-      ofstream eigout ("eigen_tridiagonal.dat");  // open an output file
-      eigout << "# 3D harmonic oscillator" << endl;
-      eigout << "# eigenvalue = " << scientific << eigenvalue << endl;
-      eigout << endl << "#   r       u(r)" << endl;
-      for (int j = 1; j <= dimension; j++)
-      {
-        eigout << fixed << double(j)*h << " "
-	     << scientific << gsl_vector_get (eigenvector_ptr, j-1) << endl;
-      }
-      eigout.close();  // close the output stream
-    }
-  }
+		// Print out the results   
+		// Allocate a pointer to one of the eigenvectors of the matrix 
+		gsl_vector *eigenvector_ptr = gsl_vector_alloc (dimension);	
+		
+/*
+		for (int i = 1; i <= dimension; i++)
+		{
+		  double eigenvalue = gsl_vector_get (Eigval_ptr, i-1);
+		  gsl_matrix_get_col (eigenvector_ptr, Eigvec_ptr, i-1);
 
-  // free the space used by the vector and matrices  and workspace 
-  gsl_matrix_free (Eigvec_ptr);
-  gsl_vector_free (Eigval_ptr);
-  gsl_matrix_free (Hmat_ptr);
-  gsl_vector_free (eigenvector_ptr);
-  gsl_eigen_symmv_free (worksp);
-
+		  cout << "eigenvalue " << i << " = " 
+		       << scientific << eigenvalue << endl;
+		       
+*/
+		//Print out N and error to file
+		double eigval = gsl_vector_get (Eigval_ptr, 0);
+		out << log10(N) << "		" << log10(fabs( ( (3./2.)-eigval) / (3./2.) )) << endl;
+		
+/*
+		  // Print out the eigenvector with the lowest eigenvalue to a file
+		  if (i == 1)
+		  {
+		    ofstream eigout ("eigen_tridiagonal.dat");  // open an output file
+		    eigout << "# 3D harmonic oscillator" << endl;
+		    eigout << "# eigenvalue = " << scientific << eigenvalue << endl;
+		    eigout << endl << "#   r       u(r)" << endl;
+		    for (int j = 1; j <= dimension; j++)
+		    {
+		      eigout << fixed << double(j)*h << " "
+			   << scientific << gsl_vector_get (eigenvector_ptr, j-1) << endl;
+		    }
+		    eigout.close();  // close the output stream
+		  }
+		}
+*/
+		// free the space used by the vector and matrices  and workspace 
+		gsl_matrix_free (Eigvec_ptr);
+		gsl_vector_free (Eigval_ptr);
+		gsl_matrix_free (Hmat_ptr);
+		gsl_vector_free (eigenvector_ptr);
+		gsl_eigen_symmv_free (worksp);
+	}
   return (0);			// successful completion 
 }
 

@@ -52,7 +52,7 @@ main ()
     {
       ans_down = down_recursion (x, order, start);
       ans_up = up_recursion (x, order);
-      rel_diff = fabs(a-b)/(fabs(a)+fabs(b));
+      rel_diff = fabs(ans_down-ans_up)/(fabs(ans_down)+fabs(ans_up));
 
       my_out << fixed << setprecision (12) << setw (8) << x << " " //increased precision
 	<< scientific << setprecision (12)

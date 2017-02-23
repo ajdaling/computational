@@ -1,4 +1,4 @@
-//  file: bessel.cpp 
+//  file: bessel_final.cpp 
 //
 //  Spherical Bessel functions via up and down recursion      
 //                                                                     
@@ -13,7 +13,8 @@
 //   * adapted from: "Projects in Computational Physics" by Landau and Paez  
 //             copyrighted by John Wiley and Sons, New York               
 //             code copyrighted by RH Landau  
-//   * data saved as: x y1 y2  --- should print column headings!!                        
+//   * added relative error calculation and output to bessel.cpp
+//   * data saved as: x y1 y2 rel_error log10(x) log10(rel_error) 
 //  
 //************************************************************************
 
@@ -37,31 +38,48 @@ const int start = 50;		// used for downward algorithm
 
 //********************************************************************
 int
-main ()
+main (void)
 {
-  double ans_down, ans_up, rel_diff;
+  double ans_down, ans_up;
+  double rel_error, log_rel_error;
 
   // open an output file stream
-  ofstream my_out ("bessel.dat");
+  ofstream my_out ("bessel_final.dat");
 
-  my_out << "# Spherical Bessel functions via up and down recursion" 
-         << endl;
+  my_out << "# Spherical Bessel functions via up and down recursion," 
+         << " l = " << order << endl;
+	 
+  my_out << "#   x       jdown(x)      jup(x)       rel. error     ";
+  my_out << "log10(x)    log10(rel.err.)" << endl; 
+	 
 
   // step through different x values
   for (double x = xmin; x <= xmax; x += step)
     {
       ans_down = down_recursion (x, order, start);
       ans_up = up_recursion (x, order);
-      rel_diff = fabs(a-b)/(fabs(a)+fabs(b));
 
-      my_out << fixed << setprecision (12) << setw (8) << x << " " //increased precision
-	<< scientific << setprecision (12)
+      // we calculate the absolute value of the relative error
+      rel_error =
+	fabs (ans_down - ans_up) / (fabs (ans_down) + fabs (ans_up));
+      if (rel_error > 1.e-20)
+	{
+	  log_rel_error = log10 (rel_error);
+	}
+      else
+	{
+	  log_rel_error = -20.;
+	}
+      my_out << fixed << setprecision (6) << setw (8) << x << " "
+	<< scientific << setprecision (6)
 	<< setw (13) << ans_down << " "
-	<< setw (13) << ans_up << " " 
-	<< setw(13) << rel_diff
+	<< setw (13) << ans_up << " "
+	<< setw (13) << rel_error << " "
+	<< setw (13) << log10 (x) << " "
+	<< setw (13) << log_rel_error 
         << endl;
     }
-  cout << "data stored in bessel.dat." << endl;
+  cout << "data stored in bessel_final.dat." << endl;
 
   // close the output file
   my_out.close ();
@@ -79,9 +97,9 @@ down_recursion (double x, int n, int m)
   j[m + 1] = j[m] = 1.;		// start with "something" (choose 1 here) 
   for (int k = m; k > 0; k--)
     {
-      j[k - 1] = ((2.* double(k) + 1.) / x) * j[k] - j[k + 1];  // recur. rel.
+      j[k - 1] = ((2. * (double) k + 1.) / x) * j[k] - j[k + 1];  // recur. rel.
     }
-  double scale = (sin (x) / x) / j[0];	// scale the result 
+  double scale = ((sin (x)) / x) / j[0];	// scale the result 
   return (j[n] * scale);
 }
 
